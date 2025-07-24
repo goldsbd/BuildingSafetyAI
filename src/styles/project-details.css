@@ -1,0 +1,60 @@
+/* Ensure proper scrolling for project details page */
+.project-details-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.project-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.folder-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.folder-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.document-list-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.document-table-wrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+/* Ensure table headers stay visible */
+.document-table-wrapper table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.document-table-wrapper thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+}
+
+/* Pagination footer */
+.pagination-footer {
+  flex-shrink: 0;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  padding: 0.5rem;
+}

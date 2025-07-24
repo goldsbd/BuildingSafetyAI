@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom BSAI Theme Styles */
+@layer components {
+  /* Beautiful gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-bsai-blue-600 to-bsai-green-600 bg-clip-text text-transparent;
+  }
+  
+  /* Modern card hover effects */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+  
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+  
+  /* Gradient borders */
+  .gradient-border {
+    @apply relative;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, theme('colors.bsai.blue.500'), theme('colors.bsai.green.500')) border-box;
+    border: 2px solid transparent;
+  }
+}
+
+/* BuildingSafetyAI Design System - BSAI Blue & Green Theme
+All colors MUST be HSL format for consistency
+*/
+
+@layer base {
+  :root {
+    /* Core backgrounds */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    
+    /* Card and surface colors */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    
+    /* Popover colors */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Primary brand colors - BSAI Blue */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 217 91% 45%;
+    
+    /* Secondary - BSAI Green */
+    --secondary: 142 71% 45%;
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Muted colors */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 20% 65%;
+    
+    /* Accent colors - Light Green */
+    --accent: 142 76% 93%;
+    --accent-foreground: 142 76% 20%;
+    
+    /* Status colors - Semantic meaning */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+    
+    /* Border and input colors */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.5rem;
+    
+    /* Sidebar colors */
+    --sidebar-background: 217 91% 97%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 142 76% 93%;
+    --sidebar-accent-foreground: 142 76% 20%;
+    --sidebar-border: 217 91% 90%;
+    --sidebar-ring: 217 91% 60%;
+    
+    /* Custom gradients and shadows */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(142 71% 45%));
+    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(217 91% 98%));
+    --shadow-elegant: 0 1px 3px hsl(220 13% 91% / 0.5);
+    --shadow-card: 0 4px 6px -1px hsl(220 13% 91% / 0.3);
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    /* Core backgrounds - Dark theme */
+    --background: 210 11% 4%;
+    --foreground: 210 10% 98%;
+    
+    /* Card and surface colors */
+    --card: 210 11% 6%;
+    --card-foreground: 210 10% 98%;
+    
+    /* Popover colors */
+    --popover: 210 11% 6%;
+    --popover-foreground: 210 10% 98%;
+    
+    /* Primary brand colors - Keep blue theme in dark */
+    --primary: 221 83% 63%;
+    --primary-foreground: 210 11% 4%;
+    --primary-dark: 221 83% 55%;
+    
+    /* Secondary grays - Dark versions */
+    --secondary: 210 11% 8%;
+    --secondary-foreground: 210 10% 98%;
+    
+    /* Muted colors */
+    --muted: 210 11% 8%;
+    --muted-foreground: 215 13% 55%;
+    
+    /* Accent colors */
+    --accent: 210 11% 8%;
+    --accent-foreground: 210 10% 98%;
+    
+    /* Status colors - Dark theme versions */
+    --success: 158 69% 48%;
+    --success-foreground: 210 11% 4%;
+    --warning: 43 100% 60%;
+    --warning-foreground: 210 11% 4%;
+    --destructive: 0 84% 70%;
+    --destructive-foreground: 210 11% 4%;
+    --info: 221 83% 63%;
+    --info-foreground: 210 11% 4%;
+    
+    /* Border and input colors */
+    --border: 210 11% 12%;
+    --input: 210 11% 12%;
+    --ring: 221 83% 63%;
+    
+    /* Sidebar colors - Dark theme */
+    --sidebar-background: 210 11% 3%;
+    --sidebar-foreground: 210 10% 98%;
+    --sidebar-primary: 221 83% 63%;
+    --sidebar-primary-foreground: 210 11% 4%;
+    --sidebar-accent: 210 11% 8%;
+    --sidebar-accent-foreground: 210 10% 98%;
+    --sidebar-border: 210 11% 12%;
+    --sidebar-ring: 221 83% 63%;
+    
+    /* Custom gradients and shadows - Dark theme */
+    --gradient-primary: linear-gradient(135deg, hsl(221 83% 63%), hsl(221 83% 55%));
+    --gradient-surface: linear-gradient(180deg, hsl(210 11% 4%), hsl(210 11% 6%));
+    --shadow-elegant: 0 1px 3px hsl(0 0% 0% / 0.5);
+    --shadow-card: 0 4px 6px -1px hsl(0 0% 0% / 0.3);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
