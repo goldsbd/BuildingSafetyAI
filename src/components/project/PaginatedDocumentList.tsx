@@ -87,23 +87,33 @@ export const PaginatedDocumentList: React.FC<PaginatedDocumentListProps> = ({
         try {
           const assessments = await api.assessments.getDocumentAssessments(doc.id);
           if (assessments && assessments.length > 0) {
-            // Get the most recent assessment
-            const assessmentId = assessments[0].id;
+            // Prefer completed assessments over pending ones
+            const completedAssessment = assessments.find(a => a.status === 'completed');
+            const assessmentId = completedAssessment ? completedAssessment.id : assessments[0].id;
             
             // Try to get the assessment report to calculate compliance score
             try {
               const report = await api.assessments.getReport(assessmentId);
               if (report && report.responses) {
-                // Calculate compliance score from responses
+                // Calculate compliance score from responses - exclude not_applicable
                 const relevantResponses = report.responses.filter((r: any) => 
-                  r.response && r.response.is_relevant !== false
+                  r.response && r.response.is_relevant !== false && r.response.verdict !== 'not_applicable'
                 );
-                const satisfactoryCount = relevantResponses.filter((r: any) => 
-                  r.response && r.response.verdict === 'satisfactory'
-                ).length;
+                
+                // Calculate weighted compliance score
+                let compliancePoints = 0;
+                relevantResponses.forEach((r: any) => {
+                  if (r.response.compliance_level === 'compliant') {
+                    compliancePoints += 1.0; // Full credit
+                  } else if (r.response.compliance_level === 'partially_compliant') {
+                    compliancePoints += 0.5; // Half credit
+                  }
+                  // non_compliant gets 0 points
+                });
+                
                 const totalRelevant = relevantResponses.length;
                 const complianceScore = totalRelevant > 0 
-                  ? Math.round((satisfactoryCount / totalRelevant) * 100) 
+                  ? Math.round((compliancePoints / totalRelevant) * 100) 
                   : 0;
                 
                 return { 
@@ -363,15 +373,29 @@ export const PaginatedDocumentList: React.FC<PaginatedDocumentListProps> = ({
       setSelectedAssessment(assessmentId);
       setReviewModalOpen(true);
     } else {
-      // First create an assessment if none exists
+      // Try to find a completed assessment first
       try {
-        const assessment = await api.assessments.createAssessment(document.id, 'manual');
-        setDocumentAssessments(prev => ({
-          ...prev,
-          [document.id]: assessment.id
-        }));
-        setSelectedAssessment(assessment.id);
-        setReviewModalOpen(true);
+        const assessments = await api.assessments.getDocumentAssessments(document.id);
+        const completedAssessment = assessments.find(a => a.status === 'completed');
+        
+        if (completedAssessment) {
+          // Use the completed assessment
+          setDocumentAssessments(prev => ({
+            ...prev,
+            [document.id]: completedAssessment.id
+          }));
+          setSelectedAssessment(completedAssessment.id);
+          setReviewModalOpen(true);
+        } else {
+          // Create a new assessment if none completed exists
+          const assessment = await api.assessments.createAssessment(document.id, 'manual');
+          setDocumentAssessments(prev => ({
+            ...prev,
+            [document.id]: assessment.id
+          }));
+          setSelectedAssessment(assessment.id);
+          setReviewModalOpen(true);
+        }
       } catch (error) {
         console.error('Error creating assessment for review:', error);
         toast({
@@ -385,6 +409,29 @@ export const PaginatedDocumentList: React.FC<PaginatedDocumentListProps> = ({
 
   const handleAssessDocument = async (document: Document) => {
     try {
+      // First check if there's an existing completed assessment
+      const existingAssessments = await api.assessments.getDocumentAssessments(document.id);
+      const completedAssessment = existingAssessments.find(a => a.status === 'completed');
+      
+      if (completedAssessment) {
+        // Ask user if they want to re-assess
+        const confirmReassess = window.confirm(
+          'This document has already been assessed. Do you want to run a new assessment? This will overwrite the existing results.'
+        );
+        
+        if (!confirmReassess) {
+          // User cancelled, show existing assessment
+          setDocumentAssessments(prev => ({
+            ...prev,
+            [document.id]: completedAssessment.id
+          }));
+          setSelectedAssessment(completedAssessment.id);
+          setSelectedDocumentId(document.id);
+          setReviewModalOpen(true);
+          return;
+        }
+      }
+      
       // Create an assessment and trigger AI analysis
       const assessment = await api.assessments.createAssessment(document.id, 'ai');
       

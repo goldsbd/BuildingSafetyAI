@@ -82,30 +82,40 @@ export const assessmentsApi = {
 
   // Get assessment responses (part of the report)
   async getAssessmentResponses(assessmentId: string): Promise<any[]> {
-    const report = await this.getReport(assessmentId);
-    // The backend returns responses with nested structure
-    // We need to flatten it for the frontend
-    if (report.responses) {
-      return report.responses.map((item: any) => ({
-        id: item.response.id,
-        assessment_id: item.response.assessment_id,
-        question_id: item.response.question_id,
-        verdict: item.response.verdict,
-        compliance_level: item.response.compliance_level,
-        comment: item.response.comment,
-        improvement_recommendation: item.response.improvement_recommendation,
-        evidence_reference: item.response.evidence_reference,
-        is_relevant: item.response.is_relevant,
-        consultant_accepted: item.response.consultant_accepted,
-        consultant_notes: item.response.consultant_notes,
-        created_at: item.response.created_at,
-        updated_at: item.response.updated_at,
-        question: item.question,
-        section: item.section,
-        subsection: item.subsection
-      }));
+    console.log('getAssessmentResponses called for assessment:', assessmentId);
+    try {
+      const report = await this.getReport(assessmentId);
+      console.log('Report received:', report);
+      // The backend returns responses with nested structure
+      // We need to flatten it for the frontend
+      if (report.responses) {
+        const flattened = report.responses.map((item: any) => ({
+          id: item.response.id,
+          assessment_id: item.response.assessment_id,
+          question_id: item.response.question_id,
+          verdict: item.response.verdict,
+          compliance_level: item.response.compliance_level,
+          comment: item.response.comment,
+          improvement_recommendation: item.response.improvement_recommendation,
+          evidence_reference: item.response.evidence_reference,
+          is_relevant: item.response.is_relevant,
+          consultant_accepted: item.response.consultant_accepted,
+          consultant_notes: item.response.consultant_notes,
+          created_at: item.response.created_at,
+          updated_at: item.response.updated_at,
+          question: item.question,
+          section: item.section,
+          subsection: item.subsection
+        }));
+        console.log('Flattened responses:', flattened);
+        return flattened;
+      }
+      console.log('No responses found in report');
+      return [];
+    } catch (error) {
+      console.error('Error getting assessment responses:', error);
+      throw error;
     }
-    return [];
   },
 
   // Get human review

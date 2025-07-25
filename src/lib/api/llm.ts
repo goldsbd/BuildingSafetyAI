@@ -117,6 +117,66 @@ export interface DailyUsageTrend {
   total_cost: number;
 }
 
+export interface HourlyUsageTrend {
+  hour: number;
+  total_requests: number;
+  total_tokens: number;
+  total_cost: number;
+}
+
+export interface DetailedUsageLog {
+  id: string;
+  company_id?: string;
+  user_id?: string;
+  project_id?: string;
+  document_id?: string;
+  model_id: string;
+  model_identifier: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  input_token_price: string;
+  output_token_price: string;
+  price_markup_multiplier: string;
+  raw_cost: string;
+  billed_cost: string;
+  request_type?: string;
+  response_time_ms?: number;
+  status: string;
+  error_message?: string;
+  created_at: string;
+}
+
+export interface DetailedLogsResponse {
+  logs: DetailedUsageLog[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total_count: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+}
+
+export interface DetailedLogsQuery {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  status?: string;
+  model_id?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface PeriodUsageTrend {
+  period: string;
+  period_label: string;
+  total_requests: number;
+  total_tokens: number;
+  total_cost: number;
+}
+
 export interface ActiveModel {
   id: string;
   model_identifier: string;
@@ -188,6 +248,38 @@ export const llmApi = {
 
   getDailyUsageTrends: async (): Promise<DailyUsageTrend[]> => {
     const response = await apiClient.get('/llm/usage/daily-trends');
+    return response.data;
+  },
+
+  getHourlyUsageTrends: async (date?: string): Promise<HourlyUsageTrend[]> => {
+    const params = date ? { date } : {};
+    const response = await apiClient.get('/llm/usage/hourly-trends', { params });
+    return response.data;
+  },
+
+  getUsageTrendsWithRange: async (startDate?: string, endDate?: string): Promise<DailyUsageTrend[]> => {
+    const params: any = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    const response = await apiClient.get('/llm/usage/trends-range', { params });
+    return response.data;
+  },
+
+  getDetailedUsageLogs: async (query?: DetailedLogsQuery): Promise<DetailedLogsResponse> => {
+    const params: any = {};
+    if (query?.page) params.page = query.page;
+    if (query?.page_size) params.page_size = query.page_size;
+    if (query?.search) params.search = query.search;
+    if (query?.status) params.status = query.status;
+    if (query?.model_id) params.model_id = query.model_id;
+    if (query?.start_date) params.start_date = query.start_date;
+    if (query?.end_date) params.end_date = query.end_date;
+    const response = await apiClient.get('/llm/usage/detailed-logs', { params });
+    return response.data;
+  },
+
+  getPeriodUsageTrends: async (period: 'monthly' | 'quarterly' | 'yearly' | 'weekly'): Promise<PeriodUsageTrend[]> => {
+    const response = await apiClient.get(`/llm/usage/period-trends/${period}`);
     return response.data;
   },
 };

@@ -121,22 +121,29 @@ export function DocumentReviewModal({
   }, [open, documentId, assessmentId]);
 
   const loadAssessmentData = async () => {
+    console.log('loadAssessmentData called with:', { documentId, assessmentId });
     if (!documentId) return;
     
     try {
       setLoading(true);
       
       // Get document details
+      console.log('Fetching document:', documentId);
       const document = await api.documents.getDocument(documentId);
+      console.log('Document loaded:', document);
       
       let latestAssessment: DocumentAssessment;
       
       if (assessmentId) {
         // Use the provided assessment ID
+        console.log('Fetching assessment by ID:', assessmentId);
         latestAssessment = await api.assessments.getAssessment(assessmentId);
+        console.log('Assessment loaded:', latestAssessment);
       } else {
         // Try to find existing assessments
+        console.log('Fetching assessments for document:', documentId);
         const assessments = await api.assessments.getDocumentAssessments(documentId);
+        console.log('Assessments found:', assessments);
         
         if (!assessments || assessments.length === 0) {
           toast({
@@ -173,13 +180,17 @@ export function DocumentReviewModal({
       }
       
       // Get assessment responses
+      console.log('Fetching responses for assessment:', latestAssessment.id);
       const responses = await api.assessments.getAssessmentResponses(latestAssessment.id);
+      console.log('Responses loaded:', responses);
       
-      setAssessmentData({
+      const assessmentDataToSet = {
         assessment: latestAssessment,
         responses: responses || [],
         document: document
-      });
+      };
+      console.log('Setting assessment data:', assessmentDataToSet);
+      setAssessmentData(assessmentDataToSet);
       
       // Load human review if exists
       const humanReviewData = await api.assessments.getHumanReview(latestAssessment.id);
@@ -259,13 +270,38 @@ export function DocumentReviewModal({
     }
   };
 
-  // Calculate statistics - only count relevant questions
-  const relevantResponses = assessmentData?.responses.filter(r => r.is_relevant !== false) || [];
+  // Calculate statistics - only count relevant questions and exclude not_applicable
+  const relevantResponses = assessmentData?.responses.filter(r => 
+    r.is_relevant !== false && r.verdict !== 'not_applicable'
+  ) || [];
   const totalRelevantQuestions = relevantResponses.length;
   const satisfactoryCount = relevantResponses.filter(r => r.verdict === 'satisfactory').length;
   const unsatisfactoryCount = relevantResponses.filter(r => r.verdict === 'unsatisfactory').length;
   const requirementCount = relevantResponses.filter(r => r.verdict === 'requirement').length;
-  const complianceScore = totalRelevantQuestions > 0 ? Math.round((satisfactoryCount / totalRelevantQuestions) * 100) : 0;
+  
+  // Calculate weighted compliance score based on compliance_level
+  let compliancePoints = 0;
+  relevantResponses.forEach(r => {
+    if (r.compliance_level === 'compliant') {
+      compliancePoints += 1.0; // Full credit
+    } else if (r.compliance_level === 'partially_compliant') {
+      compliancePoints += 0.5; // Half credit
+    }
+    // non_compliant gets 0 points
+  });
+  
+  const complianceScore = totalRelevantQuestions > 0 
+    ? Math.round((compliancePoints / totalRelevantQuestions) * 100) 
+    : 0;
+  
+  console.log('Statistics calculated:', {
+    totalResponses: assessmentData?.responses?.length || 0,
+    relevantResponses: relevantResponses.length,
+    satisfactoryCount,
+    unsatisfactoryCount,
+    requirementCount,
+    complianceScore
+  });
 
   const handleDownload = async () => {
     if (!assessmentData) return;
@@ -296,6 +332,8 @@ export function DocumentReviewModal({
     }
   };
 
+  console.log('DocumentReviewModal render:', { open, loading, assessmentData, documentId, assessmentId });
+
   if (!open) return null;
 
   if (loading) {
@@ -315,7 +353,17 @@ export function DocumentReviewModal({
   }
 
   if (!assessmentData) {
-    return null;
+    console.warn('No assessment data available, showing empty dialog');
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>No Assessment Data</DialogTitle>
+            <DialogDescription>No assessment data is available for this document.</DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   return (
