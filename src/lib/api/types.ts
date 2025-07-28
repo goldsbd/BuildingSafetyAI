@@ -234,6 +234,9 @@ export interface AssessmentResponse {
   is_relevant?: boolean;
   consultant_accepted?: boolean;
   consultant_notes?: string;
+  vector_context_summary?: string;
+  supporting_references?: string;
+  enhanced_evidence_reference?: string;
   created_at: string;
   updated_at: string;
 }

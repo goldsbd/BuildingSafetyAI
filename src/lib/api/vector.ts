@@ -94,15 +94,6 @@ export const vectorApi = {
     return response.data;
   },
 
-  async mountVectorDB(projectId: string): Promise<{ success: boolean; stats: VectorStats }> {
-    const response = await apiClient.put(`/projects/${projectId}/vector-db/mount`);
-    return response.data;
-  },
-
-  async unmountVectorDB(projectId: string): Promise<{ success: boolean }> {
-    const response = await apiClient.put(`/projects/${projectId}/vector-db/unmount`);
-    return response.data;
-  },
 
   async getVectorStats(projectId: string): Promise<VectorStats | null> {
     try {

@@ -22,8 +22,9 @@ import { vectorApi } from '@/lib/api/vector';
 import { useToast } from '@/hooks/use-toast';
 import { formatDate } from '@/lib/utils';
 import type { Project } from '@/lib/api/types';
+import { VectorProcessingProgressModal } from '@/components/project/VectorProcessingProgressModal';
 
-type VectorStatus = 'not_configured' | 'configuring' | 'ready' | 'indexing' | 'offline' | 'error';
+type VectorStatus = 'not_configured' | 'configuring' | 'ready' | 'indexing' | 'error';
 
 interface ProjectVectorInfo extends Project {
   vectorStatus: VectorStatus;
@@ -37,6 +38,7 @@ export default function VectorDatabases() {
   const { toast } = useToast();
   const [projects, setProjects] = useState<ProjectVectorInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProjectForProgress, setSelectedProjectForProgress] = useState<string | null>(null);
 
   useEffect(() => {
     loadProjectsWithVectorInfo();
@@ -151,31 +153,8 @@ export default function VectorDatabases() {
     navigate(`/companies/${companyId}/projects/${projectId}?tab=chatbot`);
   };
 
-  const quickToggleVectorDB = async (projectId: string, currentStatus: VectorStatus) => {
-    try {
-      if (currentStatus === 'ready') {
-        await vectorApi.unmountVectorDB(projectId);
-        toast({
-          title: 'Vector DB Unmounted',
-          description: 'Vector database has been taken offline.',
-        });
-      } else if (currentStatus === 'offline') {
-        await vectorApi.mountVectorDB(projectId);
-        toast({
-          title: 'Vector DB Mounted',
-          description: 'Vector database is now online.',
-        });
-      }
-      
-      // Refresh the data
-      loadProjectsWithVectorInfo();
-    } catch (error) {
-      toast({
-        title: 'Operation Failed',
-        description: 'Failed to toggle vector database status.',
-        variant: 'destructive',
-      });
-    }
+  const handleManageVectorDB = (companyId: string, projectId: string) => {
+    navigate(`/companies/${companyId}/projects/${projectId}?tab=vector-db`);
   };
 
   return (
@@ -265,18 +244,24 @@ export default function VectorDatabases() {
                             <MessageCircle className="w-4 h-4" />
                           </Button>
                         )}
-                        
-                        {(project.vectorStatus === 'ready' || project.vectorStatus === 'offline') && (
+
+                        {project.vectorStatus === 'indexing' && (
                           <Button
-                            variant={project.vectorStatus === 'ready' ? 'outline' : 'default'}
+                            variant="secondary"
                             size="sm"
-                            onClick={() => quickToggleVectorDB(project.id, project.vectorStatus)}
+                            onClick={() => setSelectedProjectForProgress(project.id)}
                           >
-                            {project.vectorStatus === 'ready' ? (
-                              <Square className="w-4 h-4" />
-                            ) : (
-                              <Play className="w-4 h-4" />
-                            )}
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          </Button>
+                        )}
+                        
+                        {project.vectorStatus === 'ready' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleManageVectorDB(project.company_id, project.id)}
+                          >
+                            <Settings className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
@@ -288,6 +273,14 @@ export default function VectorDatabases() {
           </Table>
         </CardContent>
       </Card>
+
+      {selectedProjectForProgress && (
+        <VectorProcessingProgressModal
+          projectId={selectedProjectForProgress}
+          isOpen={!!selectedProjectForProgress}
+          onClose={() => setSelectedProjectForProgress(null)}
+        />
+      )}
     </div>
   );
 }

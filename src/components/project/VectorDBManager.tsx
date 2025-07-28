@@ -35,7 +35,7 @@ interface VectorDBManagerProps {
   projectId: string;
 }
 
-type VectorStatus = 'not_configured' | 'configuring' | 'ready' | 'indexing' | 'offline' | 'error';
+type VectorStatus = 'not_configured' | 'configuring' | 'ready' | 'indexing' | 'error';
 
 interface VectorDBState {
   status: VectorStatus;
@@ -166,49 +166,7 @@ export function VectorDBManager({ projectId }: VectorDBManagerProps) {
     }
   };
 
-  const handleMount = async () => {
-    setLoading(true);
-    try {
-      const response = await vectorApi.mountVectorDB(projectId);
-      setState(prev => ({ 
-        ...prev, 
-        status: 'ready', 
-        stats: response.stats 
-      }));
-      toast({
-        title: "Vector Database Mounted",
-        description: "Vector database is now online and ready for search.",
-      });
-    } catch (error) {
-      toast({
-        title: "Mount Failed",
-        description: "Failed to mount vector database.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleUnmount = async () => {
-    setLoading(true);
-    try {
-      await vectorApi.unmountVectorDB(projectId);
-      setState(prev => ({ ...prev, status: 'offline' }));
-      toast({
-        title: "Vector Database Unmounted",
-        description: "Vector database has been taken offline.",
-      });
-    } catch (error) {
-      toast({
-        title: "Unmount Failed",
-        description: "Failed to unmount vector database.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     setLoading(true);
@@ -257,7 +215,6 @@ export function VectorDBManager({ projectId }: VectorDBManagerProps) {
       case 'ready': return 'bg-green-500';
       case 'indexing': return 'bg-blue-500';
       case 'configuring': return 'bg-yellow-500';
-      case 'offline': return 'bg-gray-500';
       case 'error': return 'bg-red-500';
       default: return 'bg-gray-300';
     }
@@ -268,7 +225,6 @@ export function VectorDBManager({ projectId }: VectorDBManagerProps) {
       case 'ready': return <CheckCircle className="w-4 h-4" />;
       case 'indexing': return <RefreshCw className="w-4 h-4 animate-spin" />;
       case 'configuring': return <Settings className="w-4 h-4" />;
-      case 'offline': return <Square className="w-4 h-4" />;
       case 'error': return <AlertCircle className="w-4 h-4" />;
       default: return <Database className="w-4 h-4" />;
     }
@@ -451,24 +407,12 @@ export function VectorDBManager({ projectId }: VectorDBManagerProps) {
                   </>
                 )}
 
-                {state.status === 'offline' && (
-                  <Button onClick={handleMount} disabled={loading}>
-                    <Play className="w-4 h-4 mr-2" />
-                    Mount Database
-                  </Button>
-                )}
 
                 {state.status === 'ready' && state.stats && state.stats.document_count > 0 && (
-                  <>
-                    <Button onClick={handleStartIndexing} disabled={loading}>
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Re-index Documents
-                    </Button>
-                    <Button variant="outline" onClick={handleUnmount} disabled={loading}>
-                      <Square className="w-4 h-4 mr-2" />
-                      Unmount
-                    </Button>
-                  </>
+                  <Button onClick={handleStartIndexing} disabled={loading}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Re-index Documents
+                  </Button>
                 )}
 
                 {state.status !== 'not_configured' && (

@@ -26,6 +26,9 @@ interface ProcessingStatus {
     requirement: number;
   };
   aiModel?: string;
+  currentStage?: string;
+  stageProgress?: number;
+  vectorLookups?: number;
 }
 
 export function DocumentProcessingProgress({ 
@@ -96,13 +99,16 @@ export function DocumentProcessingProgress({
           setStatus(prev => ({ ...prev, status: 'failed' }));
           clearInterval(interval);
         } else {
-          // Use real progress from backend
+          // Use real progress from backend - fix the property access
           setStatus(prev => ({
             ...prev,
-            progress: progressResponse.progress?.percentage || prev.progress,
-            processedCount: progressResponse.progress?.current || prev.processedCount,
-            totalCount: progressResponse.progress?.total || prev.totalCount,
-            status: progressResponse.status || 'processing'
+            progress: progressResponse.overall_progress || prev.progress,
+            processedCount: progressResponse.completed_responses || prev.processedCount,
+            totalCount: progressResponse.total_questions || prev.totalCount,
+            status: progressResponse.status === 'in_progress' ? 'processing' : progressResponse.status || 'processing',
+            currentStage: progressResponse.current_stage || prev.currentStage,
+            stageProgress: progressResponse.stage_progress || prev.stageProgress,
+            vectorLookups: progressResponse.vector_lookups_completed || prev.vectorLookups
           }));
         }
       } catch (error) {
@@ -170,10 +176,26 @@ export function DocumentProcessingProgress({
                 <div className="flex items-center justify-center space-x-3">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <div>
-                    <p className="font-medium">AI Analysis in Progress</p>
-                    <p className="text-sm text-muted-foreground">
-                      {status.aiModel ? `Using ${status.aiModel} to review` : 'AI model is reviewing'} compliance requirements...
+                    <p className="font-medium">
+                      {status.currentStage || 'AI Analysis in Progress'}
                     </p>
+                    <p className="text-sm text-muted-foreground">
+                      {status.currentStage?.includes('Stage 1') 
+                        ? `Finding relevant cross-references in project documents... (${status.vectorLookups || 0} lookups)`
+                        : status.currentStage?.includes('Stage 2')
+                        ? `${status.aiModel ? `Using ${status.aiModel}` : 'AI model'} to analyze with vector context...`
+                        : `${status.aiModel ? `Using ${status.aiModel}` : 'AI model'} to review compliance requirements...`
+                      }
+                    </p>
+                    {status.currentStage && (
+                      <div className="mt-2">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                          <span>{status.currentStage} Progress</span>
+                          <span>{Math.round(status.stageProgress || 0)}%</span>
+                        </div>
+                        <Progress value={status.stageProgress || 0} className="h-1" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

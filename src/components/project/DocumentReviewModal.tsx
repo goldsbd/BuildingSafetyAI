@@ -38,7 +38,8 @@ import {
   Info,
   Loader2,
   Eye,
-  EyeOff
+  EyeOff,
+  X
 } from "lucide-react";
 import { api } from '@/lib/api';
 import type { Document, DocumentAssessment, AssessmentQuestionResponse } from '@/lib/api/types';
@@ -272,7 +273,9 @@ export function DocumentReviewModal({
 
   // Calculate statistics - only count relevant questions and exclude not_applicable
   const relevantResponses = assessmentData?.responses.filter(r => 
-    r.is_relevant !== false && r.verdict !== 'not_applicable'
+    r.is_relevant !== false && 
+    r.verdict !== 'not_applicable' &&
+    r.compliance_level !== 'not_applicable'  // Also exclude compliance-level not_applicable
   ) || [];
   const totalRelevantQuestions = relevantResponses.length;
   const satisfactoryCount = relevantResponses.filter(r => r.verdict === 'satisfactory').length;
@@ -368,7 +371,7 @@ export function DocumentReviewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col" hideCloseButton>
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
@@ -395,6 +398,10 @@ export function DocumentReviewModal({
               <Button variant="outline" size="sm" onClick={handleDownload}>
                 <Download className="h-4 w-4 mr-2" />
                 Download Report
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                <X className="h-4 w-4 mr-2" />
+                Close
               </Button>
             </div>
           </div>
@@ -454,11 +461,13 @@ export function DocumentReviewModal({
                           <TableHeader className="sticky top-0 bg-card border-b">
                             <TableRow>
                               <TableHead className="w-[40px] px-4">#</TableHead>
-                              <TableHead className="min-w-[200px] max-w-[250px] px-4">Question</TableHead>
+                              <TableHead className="min-w-[180px] max-w-[225px] px-4">Question</TableHead>
                               <TableHead className="min-w-[120px] px-4">Section</TableHead>
-                              <TableHead className="min-w-[300px] px-4">AI Comment</TableHead>
-                              <TableHead className="min-w-[400px] px-4">Recommendation</TableHead>
+                              <TableHead className="min-w-[270px] px-4">AI Comment</TableHead>
+                              <TableHead className="min-w-[320px] px-4">Recommendation</TableHead>
                               <TableHead className="min-w-[120px] px-4">Evidence</TableHead>
+                              <TableHead className="min-w-[200px] px-4">Cross-References</TableHead>
+                              <TableHead className="min-w-[150px] px-4">Supporting Docs</TableHead>
                               <TableHead className="w-[110px] px-4">Compliance</TableHead>
                               <TableHead className="w-[100px] px-4">Verdict</TableHead>
                               <TableHead className="w-[120px] px-4">Consultant Review</TableHead>
@@ -505,8 +514,40 @@ export function DocumentReviewModal({
                                   </TableCell>
                                   <TableCell className="px-4">
                                     <p className="text-sm">
-                                      {response.evidence_reference || 'No evidence cited'}
+                                      {response.enhanced_evidence_reference || response.evidence_reference || 'No evidence cited'}
                                     </p>
+                                  </TableCell>
+                                  <TableCell className="px-4">
+                                    <div className="text-sm">
+                                      {response.vector_context_summary ? (
+                                        <div className="space-y-1">
+                                          <Badge variant="outline" className="text-xs">
+                                            Vector Context
+                                          </Badge>
+                                          <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                            {response.vector_context_summary}
+                                          </p>
+                                        </div>
+                                      ) : (
+                                        <span className="text-muted-foreground">No cross-references</span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="px-4">
+                                    <div className="text-sm">
+                                      {response.supporting_references ? (
+                                        <div className="space-y-1">
+                                          <Badge variant="outline" className="text-xs">
+                                            Supporting
+                                          </Badge>
+                                          <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                            {response.supporting_references}
+                                          </p>
+                                        </div>
+                                      ) : (
+                                        <span className="text-muted-foreground">No supporting docs</span>
+                                      )}
+                                    </div>
                                   </TableCell>
                                   <TableCell className="px-4">
                                     <Badge 
