@@ -52,6 +52,37 @@ export interface SearchResponse {
   count: number;
 }
 
+export interface DocumentProcessingStatus {
+  id: string;
+  project_id: string;
+  document_id: string;
+  document_name: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress_percentage: number;
+  total_pages?: number;
+  processed_pages: number;
+  total_chunks?: number;
+  processed_chunks: number;
+  start_time?: string;
+  end_time?: string;
+  processing_time_ms?: number;
+  error_message?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProcessingProgress {
+  project_id: string;
+  status: string;
+  total_documents: number;
+  processed_documents: number;
+  total_chunks: number;
+  processed_chunks: number;
+  start_time?: string;
+  estimated_completion_time?: string;
+  documents: DocumentProcessingStatus[];
+}
+
 export const vectorApi = {
   async initializeVectorDB(projectId: string, config: VectorConfig): Promise<{ success: boolean; stats: VectorStats }> {
     const response = await apiClient.post(`/projects/${projectId}/vector-db/initialize`, config);
@@ -116,6 +147,16 @@ export const vectorApi = {
 
   async deleteVectorDB(projectId: string): Promise<{ success: boolean }> {
     const response = await apiClient.delete(`/projects/${projectId}/vector-db`);
+    return response.data;
+  },
+
+  async getProcessingProgress(projectId: string): Promise<ProcessingProgress> {
+    const response = await apiClient.get(`/projects/${projectId}/vector-db/progress`);
+    return response.data;
+  },
+
+  async cleanupMacOSXEntries(projectId: string): Promise<{ success: boolean; message: string; deleted_count: number }> {
+    const response = await apiClient.delete(`/projects/${projectId}/vector-db/cleanup-macosx`);
     return response.data;
   }
 };

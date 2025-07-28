@@ -339,6 +339,35 @@ Target: Minimum 80% code coverage for backend
 4. **Testing**: Use `./scripts/test-quick-processing.sh` for end-to-end testing
 5. **Retry Logic**: Automatic exponential backoff with jitter for failed API calls
 
+### Qdrant Vector Database Development
+**CRITICAL: NO HTTP/2 gRPC - USE REST API ONLY**
+
+⚠️ **IMPORTANT**: Qdrant has persistent HTTP/2 protocol issues with gRPC client calls. All Qdrant interactions MUST use REST API endpoints exclusively.
+
+**Requirements:**
+1. **REST API Only**: Use HTTP/JSON requests to `http://localhost:6333` endpoints
+2. **No gRPC Client**: Never use `qdrant_client::client::QdrantClient` gRPC methods
+3. **HTTP Client**: Use `reqwest::Client` for all Qdrant operations
+
+**Common Qdrant Operations:**
+- **Collection Management**: `GET/POST/DELETE /collections/{name}`
+- **Point Insertion**: `POST /collections/{name}/points` (batch operations)
+- **Vector Search**: `POST /collections/{name}/points/search`
+- **Collection Stats**: `GET /collections/{name}`
+
+**Implemented REST Methods:**
+- `batch_insert_chunks()` - Bulk insert via REST API
+- `search_similar_chunks_rest()` - Vector search via REST API  
+- `delete_collection()` - Collection deletion via REST API
+- `get_collection_info_rest()` - Collection info via REST API
+
+**Error Pattern to Avoid:**
+```
+Error in the response: Unknown error h2 protocol error: http2 error MetadataMap { headers: {} }
+```
+
+If you see HTTP/2 errors, immediately implement REST API fallback method.
+
 ## Current Implementation Status (July 25, 2025)
 
 **Fully Implemented:**

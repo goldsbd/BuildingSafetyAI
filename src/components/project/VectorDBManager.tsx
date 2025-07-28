@@ -29,6 +29,7 @@ import {
 import { vectorApi, VectorStats, VectorOperationLog } from '@/lib/api/vector';
 import { useToast } from '@/hooks/use-toast';
 import { formatBytes, formatDate } from '@/lib/utils';
+import { VectorProcessingProgressModal } from './VectorProcessingProgressModal';
 
 interface VectorDBManagerProps {
   projectId: string;
@@ -52,6 +53,7 @@ export function VectorDBManager({ projectId }: VectorDBManagerProps) {
   const [state, setState] = useState<VectorDBState>({ status: 'not_configured' });
   const [loading, setLoading] = useState(false);
   const [operations, setOperations] = useState<VectorOperationLog[]>([]);
+  const [showProgressModal, setShowProgressModal] = useState(false);
   const [initConfig, setInitConfig] = useState({
     embedding_model: 'text-embedding-3-small',
     chunk_size: 1000,
@@ -222,6 +224,27 @@ export function VectorDBManager({ projectId }: VectorDBManagerProps) {
       toast({
         title: "Delete Failed",
         description: "Failed to delete vector database.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCleanupMacOSX = async () => {
+    setLoading(true);
+    try {
+      const result = await vectorApi.cleanupMacOSXEntries(projectId);
+      toast({
+        title: "Cleanup Complete",
+        description: result.message,
+      });
+      // Refresh stats after cleanup
+      loadVectorStats();
+    } catch (error) {
+      toast({
+        title: "Cleanup Failed",
+        description: "Failed to clean up __MACOSX entries.",
         variant: "destructive",
       });
     } finally {
@@ -412,10 +435,19 @@ export function VectorDBManager({ projectId }: VectorDBManagerProps) {
                       </AlertDescription>
                     </Alert>
                     
-                    <Button onClick={handleStartIndexing} disabled={loading} variant="outline">
-                      <Play className="w-4 h-4 mr-2" />
-                      Force Re-index
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => setShowProgressModal(true)}
+                        variant="default"
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        View Detailed Progress
+                      </Button>
+                      <Button onClick={handleStartIndexing} disabled={loading} variant="outline">
+                        <Play className="w-4 h-4 mr-2" />
+                        Force Re-index
+                      </Button>
+                    </div>
                   </>
                 )}
 
@@ -471,6 +503,23 @@ export function VectorDBManager({ projectId }: VectorDBManagerProps) {
                 <Button variant="outline" onClick={loadVectorStats} disabled={loading}>
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Refresh
+                </Button>
+                
+                <Button 
+                  variant="secondary"
+                  onClick={() => setShowProgressModal(true)}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  View Processing History
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  onClick={handleCleanupMacOSX}
+                  disabled={loading}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clean __MACOSX
                 </Button>
                 
                 {/* Enhanced logging button */}
@@ -561,6 +610,12 @@ export function VectorDBManager({ projectId }: VectorDBManagerProps) {
           </Tabs>
         </CardContent>
       </Card>
+
+      <VectorProcessingProgressModal
+        projectId={projectId}
+        isOpen={showProgressModal}
+        onClose={() => setShowProgressModal(false)}
+      />
     </div>
   );
 }
