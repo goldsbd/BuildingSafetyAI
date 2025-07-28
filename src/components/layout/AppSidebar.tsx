@@ -17,7 +17,8 @@ import {
   HelpCircle,
   Cog,
   Brain,
-  BarChart3
+  BarChart3,
+  Database
 } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
@@ -65,6 +66,10 @@ const aiModelItems = [
   { title: "Token Usage", url: "/ai-models/usage", icon: BarChart3 },
 ]
 
+const vectorItems = [
+  { title: "Vector Databases", url: "/vector-databases", icon: Database },
+]
+
 export function AppSidebar() {
   const { state } = useSidebar()
   const location = useLocation()
@@ -77,6 +82,7 @@ export function AppSidebar() {
     evaluations: false,
     admin: false,
     aiModels: false,
+    vector: false,
   })
 
   const isActive = (path: string) => currentPath === path
@@ -191,6 +197,34 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {evaluationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavClasses(item.url)}>
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span className="text-base">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          )}
+        </SidebarGroup>
+
+        <Separator className="my-2" />
+
+        {/* Vector Databases Group */}
+        <SidebarGroup>
+          <GroupHeader
+            title="Vector Databases"
+            isExpanded={expandedGroups.vector}
+            onToggle={() => toggleGroup('vector')}
+            hasActiveItem={isGroupActive(vectorItems)}
+          />
+          {(expandedGroups.vector || collapsed) && (
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {vectorItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink to={item.url} className={getNavClasses(item.url)}>

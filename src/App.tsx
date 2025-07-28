@@ -25,6 +25,8 @@ import AdminQuestions from "./pages/admin/AdminQuestions";
 import AdminPrompts from "./pages/admin/AdminPrompts";
 import ModelConfiguration from "./pages/ai-models/ModelConfiguration";
 import TokenUsage from "./pages/ai-models/TokenUsage";
+import VectorDatabases from "./pages/VectorDatabases";
+import ProjectDetails from "./pages/ProjectDetails";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +72,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <CompanyProjects />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/companies/:companyId/projects/:projectId"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ProjectDetails />
                   </AppLayout>
                 </ProtectedRoute>
               }
@@ -269,6 +281,18 @@ const App = () => (
                       <Route path="config" element={<ModelConfiguration />} />
                       <Route path="usage" element={<TokenUsage />} />
                     </Routes>
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Vector Databases route */}
+            <Route
+              path="/vector-databases"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <VectorDatabases />
                   </AppLayout>
                 </ProtectedRoute>
               }

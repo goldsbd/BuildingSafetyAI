@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Building2, Folder, FileText, Upload as UploadIcon, Bot } from "lucide-react";
+import { ArrowLeft, Building2, Folder, FileText, Upload as UploadIcon, Bot, Database, MessageCircle } from "lucide-react";
 import { api } from '@/lib/api';
 import type { Company, Project } from '@/lib/api/types';
 import { useToast } from '@/hooks/use-toast';
@@ -10,16 +10,19 @@ import { useToast } from '@/hooks/use-toast';
 // Import tab components
 import DocumentReviewTab from '@/components/project/DocumentReviewTab';
 import DocumentUploadTab from '@/components/project/DocumentUploadTab';
+import { VectorDBManager } from '@/components/project/VectorDBManager';
+import { ProjectChatbot } from '@/components/project/ProjectChatbot';
 
 export default function ProjectDetails() {
   const { companyId, projectId } = useParams<{ companyId: string; projectId: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
   const [company, setCompany] = useState<Company | null>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('review');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'review');
 
   useEffect(() => {
     if (companyId && projectId) {
@@ -120,8 +123,11 @@ export default function ProjectDetails() {
       </div>
 
       {/* Tabbed Interface */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs value={activeTab} onValueChange={(value) => {
+        setActiveTab(value);
+        setSearchParams({ tab: value });
+      }} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="review" className="flex items-center gap-2">
             <Bot className="h-4 w-4" />
             AI Review Dashboard
@@ -129,6 +135,14 @@ export default function ProjectDetails() {
           <TabsTrigger value="upload" className="flex items-center gap-2">
             <UploadIcon className="h-4 w-4" />
             Document Upload
+          </TabsTrigger>
+          <TabsTrigger value="vector" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Vector Database
+          </TabsTrigger>
+          <TabsTrigger value="chatbot" className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4" />
+            AI Chat
           </TabsTrigger>
         </TabsList>
 
@@ -148,6 +162,14 @@ export default function ProjectDetails() {
             project={project}
             onRefreshNeeded={loadProjectData}
           />
+        </TabsContent>
+
+        <TabsContent value="vector" className="mt-6">
+          <VectorDBManager projectId={projectId!} />
+        </TabsContent>
+
+        <TabsContent value="chatbot" className="mt-6">
+          <ProjectChatbot projectId={projectId!} />
         </TabsContent>
       </Tabs>
     </div>
