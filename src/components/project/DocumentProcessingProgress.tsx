@@ -53,27 +53,29 @@ export function DocumentProcessingProgress({
   useEffect(() => {
     if (!open || !assessmentId) return;
 
-    // Poll for status updates
+    // Poll for job status updates using new job system
     const interval = setInterval(async () => {
       try {
-        // Get real progress from backend
-        const progressResponse = await api.assessments.getProgress(assessmentId);
-        const assessment = await api.assessments.getAssessment(assessmentId);
+        // Get job status from new fire-and-forget API
+        const jobStatus = await api.assessments.getAssessmentJobStatus(assessmentId);
+        const job = jobStatus.job;
         
         // Log progress for debugging
-        console.log('Assessment Progress:', {
+        console.log('Assessment Job Status:', {
           assessmentId,
-          status: assessment.status,
-          aiModel: assessment.ai_model,
-          progress: progressResponse.progress
+          jobId: job.id,
+          status: job.status,
+          progress: job.progress_percent,
+          stage: job.progress_stage,
+          isComplete: jobStatus.is_complete
         });
         
-        // Update AI model if available
-        if (assessment.ai_model) {
-          setStatus(prev => ({ ...prev, aiModel: assessment.ai_model }));
-        }
+        // Map job status to component status
+        const componentStatus = job.status === 'Completed' ? 'completed' : 
+                              job.status === 'Failed' ? 'failed' : 
+                              job.status === 'Processing' ? 'processing' : 'processing';
         
-        if (assessment.status === 'completed' || progressResponse.status === 'completed') {
+        if (jobStatus.is_complete && job.status === 'Completed') {
           // Get the final report to show summary
           const report = await api.assessments.getReport(assessmentId);
           
@@ -95,24 +97,55 @@ export function DocumentProcessingProgress({
           setTimeout(() => {
             onComplete?.();
           }, 2000);
-        } else if (assessment.status === 'failed' || progressResponse.status === 'failed') {
-          setStatus(prev => ({ ...prev, status: 'failed' }));
+        } else if (job.status === 'Failed') {
+          setStatus(prev => ({ 
+            ...prev, 
+            status: 'failed',
+            currentStage: job.error_message || 'Processing failed'
+          }));
           clearInterval(interval);
         } else {
-          // Use real progress from backend - fix the property access
+          // Update progress from job status
+          const currentProgress = job.progress_percent || 0;
+          const totalBatches = job.total_batches || 22;
+          const completedBatches = job.completed_batches || 0;
+          
           setStatus(prev => ({
             ...prev,
-            progress: progressResponse.overall_progress || prev.progress,
-            processedCount: progressResponse.completed_responses || prev.processedCount,
-            totalCount: progressResponse.total_questions || prev.totalCount,
-            status: progressResponse.status === 'in_progress' ? 'processing' : progressResponse.status || 'processing',
-            currentStage: progressResponse.current_stage || prev.currentStage,
-            stageProgress: progressResponse.stage_progress || prev.stageProgress,
-            vectorLookups: progressResponse.vector_lookups_completed || prev.vectorLookups
+            status: componentStatus,
+            progress: currentProgress,
+            processedCount: Math.round((currentProgress / 100) * 107), // Estimate based on progress
+            totalCount: 107,
+            currentStage: job.progress_stage || 'Processing',
+            stageProgress: job.progress_percent || 0
           }));
         }
       } catch (error) {
-        console.error('Error checking assessment status:', error);
+        console.error('Error checking assessment job status:', error);
+        // Fallback to old API if job status fails
+        try {
+          const assessment = await api.assessments.getAssessment(assessmentId);
+          if (assessment.status === 'completed') {
+            const report = await api.assessments.getReport(assessmentId);
+            setStatus({
+              status: 'completed',
+              progress: 100,
+              processedCount: report.responses?.length || 0,
+              totalCount: report.responses?.length || 107,
+              verdictCounts: {
+                satisfactory: report.responses?.filter((r: any) => r.verdict === 'satisfactory').length || 0,
+                unsatisfactory: report.responses?.filter((r: any) => r.verdict === 'unsatisfactory').length || 0,
+                requirement: report.responses?.filter((r: any) => r.verdict === 'requirement').length || 0
+              }
+            });
+            clearInterval(interval);
+            setTimeout(() => {
+              onComplete?.();
+            }, 2000);
+          }
+        } catch (fallbackError) {
+          console.error('Fallback assessment check also failed:', fallbackError);
+        }
       }
     }, 2000); // Check every 2 seconds
 

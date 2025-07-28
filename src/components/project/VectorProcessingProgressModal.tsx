@@ -83,14 +83,19 @@ export function VectorProcessingProgressModal({
   const [progress, setProgress] = useState<ProcessingProgress | null>(null);
   const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const loadProgress = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await vectorApi.getProcessingProgress(projectId);
       setProgress(data);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to load processing progress:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load progress');
     } finally {
       setLoading(false);
     }
@@ -201,6 +206,15 @@ export function VectorProcessingProgressModal({
               </DialogTitle>
               <DialogDescription>
                 Real-time processing status for document indexing
+                {lastUpdated && (
+                  <span className="block mt-1 text-xs text-muted-foreground">
+                    Last updated: {new Intl.DateTimeFormat('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit'
+                    }).format(lastUpdated)}
+                  </span>
+                )}
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -217,8 +231,9 @@ export function VectorProcessingProgressModal({
                 variant="outline"
                 size="sm"
                 onClick={() => setAutoRefresh(!autoRefresh)}
-                className={autoRefresh ? 'bg-blue-50' : ''}
+                className={autoRefresh ? 'bg-blue-50 border-blue-200 text-blue-700' : ''}
               >
+                <Timer className="w-4 h-4 mr-2" />
                 {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
               </Button>
               <Button
@@ -232,7 +247,21 @@ export function VectorProcessingProgressModal({
           </div>
         </DialogHeader>
 
-        {progress ? (
+        {error ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center space-y-4">
+              <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
+              <div>
+                <h3 className="text-lg font-semibold text-destructive">Failed to Load Progress</h3>
+                <p className="text-sm text-muted-foreground mt-1">{error}</p>
+              </div>
+              <Button onClick={loadProgress} variant="outline">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Try Again
+              </Button>
+            </div>
+          </div>
+        ) : progress ? (
           <div className="space-y-6">
             {/* Overall Progress Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -264,16 +293,40 @@ export function VectorProcessingProgressModal({
                 </div>
               </div>
 
-              <div className="bg-purple-50 p-4 rounded-lg">
+              <div className={`p-4 rounded-lg border transition-all duration-200 ${
+                progress.status === 'indexing' 
+                  ? 'bg-blue-50 border-blue-200' 
+                  : progress.status === 'ready' 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-purple-50 border-purple-200'
+              }`}>
                 <div className="flex items-center gap-2 mb-2">
-                  <Timer className="w-5 h-5 text-purple-600" />
+                  {progress.status === 'indexing' ? (
+                    <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+                  ) : progress.status === 'ready' ? (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <Timer className="w-5 h-5 text-purple-600" />
+                  )}
                   <span className="font-medium">Status</span>
                 </div>
-                <div className="text-lg font-medium text-purple-700 capitalize">
+                <div className={`text-lg font-medium capitalize ${
+                  progress.status === 'indexing' 
+                    ? 'text-blue-700' 
+                    : progress.status === 'ready' 
+                      ? 'text-green-700' 
+                      : 'text-purple-700'
+                }`}>
                   {progress.status.replace('_', ' ')}
                 </div>
                 {progress.start_time && (
-                  <div className="text-sm text-purple-600 mt-1">
+                  <div className={`text-sm mt-1 ${
+                    progress.status === 'indexing' 
+                      ? 'text-blue-600' 
+                      : progress.status === 'ready' 
+                        ? 'text-green-600' 
+                        : 'text-purple-600'
+                  }`}>
                     Started: {formatTime(progress.start_time)}
                   </div>
                 )}
@@ -283,7 +336,13 @@ export function VectorProcessingProgressModal({
                 const eta = getEstimatedTimeRemaining();
                 const isCompleted = eta && typeof eta === 'object' && eta.type === 'completed';
                 return (
-                  <div className={`p-4 rounded-lg ${isCompleted ? 'bg-green-50' : 'bg-yellow-50'}`}>
+                  <div className={`p-4 rounded-lg border transition-all duration-200 ${
+                    isCompleted 
+                      ? 'bg-green-50 border-green-200 shadow-sm' 
+                      : progress?.status === 'indexing' 
+                        ? 'bg-blue-50 border-blue-200 shadow-sm' 
+                        : 'bg-yellow-50 border-yellow-200'
+                  }`}>
                     {isCompleted ? (
                       <>
                         <div className="flex items-center gap-2 mb-2">
@@ -304,14 +363,26 @@ export function VectorProcessingProgressModal({
                     ) : (
                       <>
                         <div className="flex items-center gap-2 mb-2">
-                          <Clock className="w-5 h-5 text-yellow-600" />
-                          <span className="font-medium">ETA</span>
+                          {progress?.status === 'indexing' ? (
+                            <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+                          ) : (
+                            <Clock className="w-5 h-5 text-yellow-600" />
+                          )}
+                          <span className={`font-medium ${
+                            progress?.status === 'indexing' ? 'text-blue-700' : 'text-yellow-700'
+                          }`}>
+                            {progress?.status === 'indexing' ? 'Processing' : 'ETA'}
+                          </span>
                         </div>
-                        <div className="text-lg font-medium text-yellow-700">
+                        <div className={`text-lg font-medium ${
+                          progress?.status === 'indexing' ? 'text-blue-700' : 'text-yellow-700'
+                        }`}>
                           {eta || 'Calculating...'}
                         </div>
                         {progress?.estimated_completion_time && (
-                          <div className="text-sm text-yellow-600 mt-1">
+                          <div className={`text-sm mt-1 ${
+                            progress?.status === 'indexing' ? 'text-blue-600' : 'text-yellow-600'
+                          }`}>
                             {formatTime(progress.estimated_completion_time)}
                           </div>
                         )}

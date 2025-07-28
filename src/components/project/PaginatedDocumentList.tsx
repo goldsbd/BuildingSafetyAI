@@ -446,8 +446,10 @@ export const PaginatedDocumentList: React.FC<PaginatedDocumentListProps> = ({
       setProcessingDocumentName(document.original_filename);
       setProcessingModalOpen(true);
 
-      // Trigger AI analysis
-      await api.assessments.analyzeWithAI(assessment.id);
+      // Start assessment job (fire-and-forget)
+      const jobResponse = await api.assessments.startAssessmentJob(assessment.id);
+      
+      console.log('Assessment job started:', jobResponse);
       
       // The progress dialog will handle completion
     } catch (error: any) {

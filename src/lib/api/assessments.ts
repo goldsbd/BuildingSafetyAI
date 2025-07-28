@@ -38,10 +38,10 @@ export const assessmentsApi = {
     return response.data;
   },
 
-  // Run AI analysis
+  // DEPRECATED: Use startAssessmentJob instead - this endpoint no longer exists
   async analyzeWithAI(assessmentId: string): Promise<any> {
-    const response = await apiClient.post(`/assessments/${assessmentId}/analyze`);
-    return response.data;
+    console.warn('analyzeWithAI is deprecated. Use startAssessmentJob instead.');
+    throw new Error('This endpoint has been disabled. Use startAssessmentJob for fire-and-forget processing.');
   },
 
   // Get assessment report
@@ -163,6 +163,76 @@ export const assessmentsApi = {
       `/assessments/${assessmentId}/responses/${responseId}/consultant-review`,
       data
     );
+    return response.data;
+  },
+
+  // ========== NEW FIRE-AND-FORGET JOB SYSTEM ==========
+
+  // Start assessment job (fire-and-forget)
+  async startAssessmentJob(assessmentId: string): Promise<{
+    success: boolean;
+    job_id: string;
+    assessment_id: string;
+    status: string;
+    estimated_duration_minutes: number;
+    message: string;
+  }> {
+    const response = await apiClient.post(`/assessments/${assessmentId}/start`);
+    return response.data;
+  },
+
+  // Get assessment job status
+  async getAssessmentJobStatus(assessmentId: string): Promise<{
+    job: {
+      id: string;
+      assessment_id: string;
+      status: string;
+      progress_stage: string | null;
+      progress_percent: number | null;
+      total_batches: number | null;
+      completed_batches: number | null;
+      error_message: string | null;
+      error_details: any | null;
+      created_at: string;
+      started_at: string | null;
+      completed_at: string | null;
+      updated_at: string | null;
+    };
+    is_active: boolean;
+    is_complete: boolean;
+    overall_progress: number;
+    estimated_completion: string | null;
+    progress_events: Array<{
+      id: string;
+      job_id: string;
+      batch_id: string | null;
+      event_type: string;
+      event_data: any | null;
+      message: string | null;
+      timestamp: string;
+    }>;
+  }> {
+    const response = await apiClient.get(`/assessments/${assessmentId}/job`);
+    return response.data;
+  },
+
+  // Get active jobs
+  async getActiveJobs(): Promise<{
+    active_jobs: Array<any>;
+    count: number;
+  }> {
+    const response = await apiClient.get('/assessments/jobs/active');
+    return response.data;
+  },
+
+  // Get dashboard counters
+  async getDashboardCounters(): Promise<{
+    total_docs: number;
+    reviewed: number;
+    not_reviewed: number;
+    processing: number;
+  }> {
+    const response = await apiClient.get('/assessments/dashboard/counters');
     return response.data;
   }
 };
